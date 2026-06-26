@@ -73,7 +73,7 @@ LABEL org.opencontainers.image.title="reana-datastore-s3fs"
 LABEL org.opencontainers.image.url="https://github.com/reanahub/reana-datastore-s3fs"
 LABEL org.opencontainers.image.vendor="reanahub"
 # x-release-please-start-version
-LABEL org.opencontainers.image.version="0.0.0"
+LABEL org.opencontainers.image.version="1.0.0"
 # x-release-please-end
 
 # The FUSE sidecar needs root privileges to perform and tear down mounts.
