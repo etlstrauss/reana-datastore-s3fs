@@ -20,15 +20,50 @@ REANA workloads by using S3FS.
 
 ## Usage
 
-The detailed information on how to install and use REANA can be found in
+The datastore sidecar automatically mounts S3-compatible object storage into
+REANA workload pods based on environment variables. It exposes a health check
+endpoint and handles graceful shutdown with proper unmounting.
+
+### Environment Variables
+
+The sidecar reads configuration from environment variables with the following pattern:
+
+```
+S3_TO_LOCAL_{alias}_ALIAS={alias}
+S3_TO_LOCAL_{alias}_BUCKET={bucket-name}
+S3_TO_LOCAL_{alias}_HOST={s3-host-url}
+S3_TO_LOCAL_{alias}_REGION={aws-region}
+S3_TO_LOCAL_{alias}_ACCESS_KEY={access-key}
+S3_TO_LOCAL_{alias}_SECRET_KEY={secret-key}
+```
+
+Example:
+```
+S3_TO_LOCAL_mydata_ALIAS=mydata
+S3_TO_LOCAL_mydata_BUCKET=my-s3-bucket
+S3_TO_LOCAL_mydata_HOST=https://s3.example.com
+S3_TO_LOCAL_mydata_REGION=us-east-1
+S3_TO_LOCAL_mydata_ACCESS_KEY=my-access-key
+S3_TO_LOCAL_mydata_SECRET_KEY=my-secret-key
+```
+
+The sidecar will mount the bucket at `/s3-data/{alias}/{bucket}`.
+
+### Endpoints
+
+- `GET /health` - Returns HTTP 200 with `{"status": "ready"}` when mounts are complete,
+  or HTTP 503 with `{"status": "mounting"}` during initialization.
+- `POST /shutdown` - Initiates graceful shutdown, triggering unmount of all S3FS mounts.
+
+For detailed information on how to install and use REANA, see
 [docs.reana.io](https://docs.reana.io).
 
 ## Development
 
-This repository currently contains the initial project scaffold. The datastore
-sidecar implementation will be added in a follow-up pull request.
+This repository contains the complete Go implementation of the REANA datastore
+sidecar for mounting S3-compatible object storage into REANA workloads using S3FS.
 
-You can build the placeholder image locally:
+You can build the image locally:
 
 ```console
 $ docker build \
