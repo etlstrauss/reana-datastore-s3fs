@@ -68,7 +68,7 @@ go_build_all() {
 }
 
 go_tests() {
-    go test -coverprofile coverage.txt "${GO_PACKAGES[@]}"
+    go test -cover -coverprofile coverage.txt "${GO_PACKAGES[@]}"
 }
 
 lint_commitlint() {
@@ -110,6 +110,8 @@ lint_commitlint() {
 }
 
 lint_goaudit() {
+    gopath_bin="$(go env GOPATH)/bin"
+    export PATH="${PATH}:${gopath_bin}"
     go install honnef.co/go/tools/cmd/staticcheck@latest
     go install golang.org/x/vuln/cmd/govulncheck@latest
     go mod verify
@@ -135,7 +137,8 @@ lint_shellcheck() {
 }
 
 lint_yamllint() {
-    yamllint .
+    find . -name "*.yaml" -exec yamllint {} \+
+    find . -name "*.yml" -exec yamllint {} \+
 }
 
 all() {

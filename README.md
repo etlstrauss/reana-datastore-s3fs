@@ -20,7 +20,63 @@ REANA workloads by using S3FS.
 
 ## Usage
 
-The detailed information on how to install and use REANA can be found in
+The datastore sidecar automatically mounts S3-compatible object storage into
+REANA workload pods based on environment variables. It exposes a health check
+endpoint and handles graceful shutdown with proper unmounting.
+
+### Environment Variables
+
+The sidecar reads configuration from environment variables with the following
+pattern:
+
+```bash
+S3_TO_LOCAL_{alias}_ALIAS={alias}
+S3_TO_LOCAL_{alias}_BUCKET={bucket-name}
+S3_TO_LOCAL_{alias}_HOST={s3-host-url}
+S3_TO_LOCAL_{alias}_REGION={aws-region}
+S3_TO_LOCAL_{alias}_ACCESS_KEY={access-key}
+S3_TO_LOCAL_{alias}_SECRET_KEY={secret-key}
+```
+
+Example:
+
+```bash
+S3_TO_LOCAL_mydata_ALIAS=mydata
+S3_TO_LOCAL_mydata_BUCKET=my-s3-bucket
+S3_TO_LOCAL_mydata_HOST=https://s3.example.com
+S3_TO_LOCAL_mydata_REGION=us-east-1
+S3_TO_LOCAL_mydata_ACCESS_KEY=my-access-key
+S3_TO_LOCAL_mydata_SECRET_KEY=my-secret-key
+```
+
+#### CLI Usage
+
+- To create this secret use the `reana-client` secrets functionalities, like:
+
+```bash
+reana-client secrets-add --env S3_TO_LOCAL_mydata_SECRET_KEY=my-secret-key
+```
+
+The sidecar will mount the bucket at `/data/s3/{alias}/{bucket}` (in the sidecar
+itself in `/s3-data/{alias}/{bucket}`).
+
+### Error Handling
+
+If the configured endpoints are not accessible the datastore sidecar will report
+this as logs.
+
+- in case of submitted jobs a Error message will be shown in the job logs
+- In case of creating a interactive session errors will be stored in
+  `/data/s3/error.txt`
+
+### Endpoints
+
+- `GET /health` - Returns HTTP 200 with `{"status": "ready"}` when mounts are
+  complete, or HTTP 503 with `{"status": "mounting"}` during initialization.
+- `POST /shutdown` - Initiates graceful shutdown, triggering unmount of all S3FS
+  mounts.
+
+For detailed information on how to install and use REANA, see
 [docs.reana.io](https://docs.reana.io).
 
 ## Useful links

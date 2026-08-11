@@ -12,8 +12,23 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
+	"github.com/reanahub/reana-datastore-s3fs/internal/api"
+	"github.com/reanahub/reana-datastore-s3fs/internal/datastore"
 	"github.com/reanahub/reana-datastore-s3fs/internal/version"
+)
+
+var (
+	// aliases is used to track mounted aliases for cleanup (global for signal handler)
+	aliases [][]string
+	// mountManager is used for cleanup on signal
+	mountManager *datastore.MountManager
+	// config is the loaded configuration
+	config *datastore.MountConfig
+	// exitFunc is used to override os.Exit for testing
+	exitFunc = os.Exit
 )
 
 func main() {
@@ -25,5 +40,45 @@ func main() {
 		return
 	}
 
-	fmt.Fprintln(os.Stdout, "reana-datastore-s3fs sidecar scaffold")
+	// Load configuration
+	var err error
+	config, err = datastore.LoadConfigFromEnv()
+	if err != nil {
+		fmt.Printf("Error loading configuration: %v\n", err)
+		exitFunc(1)
+	}
+
+	// Create mount manager
+	mountManager = datastore.NewMountManager(config)
+
+	// Set up signal handling for graceful shutdown
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+
+	// Start cleanup in a goroutine when signal is received
+	go func() {
+		<-signalChan
+		cleanupAndExit()
+	}()
+
+	// Start the API server
+	server := api.NewServer()
+	if err := server.Run(); err != nil {
+		fmt.Printf("Error running server: %v\n", err)
+		exitFunc(1)
+	}
+}
+
+func cleanupAndExit() {
+	fmt.Println("\nSignal received. Cleaning up mounts...")
+
+	if mountManager != nil {
+		mountManager.Umount()
+	} else {
+		// Fallback: use the Python-compatible Umount function
+		datastore.Umount(aliases)
+	}
+
+	fmt.Println("Exiting.")
+	exitFunc(0)
 }
