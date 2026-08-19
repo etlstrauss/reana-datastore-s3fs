@@ -135,7 +135,8 @@ lint_shellcheck() {
 }
 
 lint_yamllint() {
-    yamllint .
+    find . -name "*.yaml" -exec yamllint {} \+
+    find . -name "*.yml" -exec yamllint {} \+
 }
 
 all() {

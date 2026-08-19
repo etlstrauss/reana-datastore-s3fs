@@ -26,9 +26,10 @@ endpoint and handles graceful shutdown with proper unmounting.
 
 ### Environment Variables
 
-The sidecar reads configuration from environment variables with the following pattern:
+The sidecar reads configuration from environment variables with the following
+pattern:
 
-```
+```bash
 S3_TO_LOCAL_{alias}_ALIAS={alias}
 S3_TO_LOCAL_{alias}_BUCKET={bucket-name}
 S3_TO_LOCAL_{alias}_HOST={s3-host-url}
@@ -38,7 +39,8 @@ S3_TO_LOCAL_{alias}_SECRET_KEY={secret-key}
 ```
 
 Example:
-```
+
+```bash
 S3_TO_LOCAL_mydata_ALIAS=mydata
 S3_TO_LOCAL_mydata_BUCKET=my-s3-bucket
 S3_TO_LOCAL_mydata_HOST=https://s3.example.com
@@ -51,9 +53,10 @@ The sidecar will mount the bucket at `/s3-data/{alias}/{bucket}`.
 
 ### Endpoints
 
-- `GET /health` - Returns HTTP 200 with `{"status": "ready"}` when mounts are complete,
-  or HTTP 503 with `{"status": "mounting"}` during initialization.
-- `POST /shutdown` - Initiates graceful shutdown, triggering unmount of all S3FS mounts.
+- `GET /health` - Returns HTTP 200 with `{"status": "ready"}` when mounts are
+  complete, or HTTP 503 with `{"status": "mounting"}` during initialization.
+- `POST /shutdown` - Initiates graceful shutdown, triggering unmount of all S3FS
+  mounts.
 
 For detailed information on how to install and use REANA, see
 [docs.reana.io](https://docs.reana.io).

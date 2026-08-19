@@ -54,8 +54,8 @@ const EnvVarPattern = `^S3_TO_LOCAL_(.*)_ALIAS$`
 // It scans for S3_TO_LOCAL_*_ALIAS variables and loads corresponding settings
 func LoadConfigFromEnv() (*MountConfig, error) {
 	config := &MountConfig{
-		BaseDir:   DefaultBaseDir,
-		Mounts:    []S3Config{},
+		BaseDir:          DefaultBaseDir,
+		Mounts:           []S3Config{},
 		MountingComplete: false,
 	}
 
@@ -66,7 +66,7 @@ func LoadConfigFromEnv() (*MountConfig, error) {
 
 	// Find all S3_TO_LOCAL_*_ALIAS environment variables
 	aliasPattern := regexp.MustCompile(EnvVarPattern)
-	
+
 	aliases := []string{}
 	for _, env := range os.Environ() {
 		parts := strings.SplitN(env, "=", 2)
@@ -92,12 +92,12 @@ func LoadConfigFromEnv() (*MountConfig, error) {
 			AccessKey: getEnvVar("S3_TO_LOCAL_", alias, "ACCESS_KEY"),
 			SecretKey: getEnvVar("S3_TO_LOCAL_", alias, "SECRET_KEY"),
 		}
-		
+
 		// Skip if bucket is empty (required field)
 		if s3Config.Bucket == "" {
 			continue
 		}
-		
+
 		config.Mounts = append(config.Mounts, s3Config)
 	}
 

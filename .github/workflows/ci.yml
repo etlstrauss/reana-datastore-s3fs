@@ -30,7 +30,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.26.4"
+          go-version: "1.26.6"
 
       - name: Check Go code formatting
         run: ./run-tests.sh --format-go
@@ -69,7 +69,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.26.4"
+          go-version: "1.26.6"
 
       - name: Build Go executable
         run: ./run-tests.sh --go-build
@@ -121,7 +121,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.26.4"
+          go-version: "1.26.6"
 
       - name: Run Go audit checks
         run: ./run-tests.sh --lint-goaudit

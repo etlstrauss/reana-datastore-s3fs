@@ -5,7 +5,7 @@
 # under the terms of the MIT License; see LICENSE file for more details.
 
 # Build sidecar binary
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.26.4-bookworm AS builder
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.26.6-bookworm AS builder
 
 ARG TARGETOS
 ARG TARGETARCH

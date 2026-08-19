@@ -92,14 +92,14 @@ func main() {
 
 func cleanupAndExit() {
 	fmt.Println("\nSignal received. Cleaning up mounts...")
-	
+
 	if mountManager != nil {
 		mountManager.Umount()
 	} else {
 		// Fallback: use the Python-compatible Umount function
 		datastore.Umount(aliases)
 	}
-	
+
 	fmt.Println("Exiting.")
 	os.Exit(0)
 }

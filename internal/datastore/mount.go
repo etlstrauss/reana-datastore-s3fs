@@ -73,7 +73,7 @@ func (m *MountManager) createFolders() error {
 func (m *MountManager) createS3Mounts() error {
 	for _, s3Config := range m.config.Mounts {
 		targetPath := s3Config.GetMountPath(m.config.BaseDir)
-		
+
 		// Create password file for S3FS authentication
 		passwdFile := "/tmp/passwd-s3fs"
 		if err := m.createPasswordFile(passwdFile, s3Config.AccessKey, s3Config.SecretKey); err != nil {
@@ -83,7 +83,7 @@ func (m *MountManager) createS3Mounts() error {
 
 		// Build S3FS command
 		cmd := m.buildS3FSCmd(s3Config, targetPath, passwdFile)
-		
+
 		// Execute S3FS mount
 		fmt.Printf("Mounting S3 bucket %s to %s\n", s3Config.Bucket, targetPath)
 		if err := cmd.Run(); err != nil {
@@ -98,13 +98,13 @@ func (m *MountManager) createS3Mounts() error {
 
 		fmt.Printf("Successfully mounted '%s'\n", s3Config.Alias)
 		m.activeMounts = append(m.activeMounts, targetPath)
-		
+
 		// Write to active mounts file for tracking
 		if err := m.writeActiveMount(targetPath); err != nil {
 			fmt.Printf("Warning: failed to write active mount: %v\n", err)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -123,7 +123,7 @@ func (m *MountManager) buildS3FSCmd(s3Config S3Config, targetPath, passwdFile st
 		s3Config.Bucket,
 		targetPath,
 	}
-	
+
 	// Add options - only include non-empty values
 	if passwdFile != "" {
 		args = append(args, "-o", fmt.Sprintf("passwd_file=%s", passwdFile))
@@ -134,7 +134,7 @@ func (m *MountManager) buildS3FSCmd(s3Config S3Config, targetPath, passwdFile st
 	if s3Config.Region != "" {
 		args = append(args, "-o", fmt.Sprintf("endpoint=%s", s3Config.Region))
 	}
-	
+
 	// Always add these flags
 	args = append(args,
 		"-o", "use_path_request_style",
@@ -142,7 +142,7 @@ func (m *MountManager) buildS3FSCmd(s3Config S3Config, targetPath, passwdFile st
 		"-o", "nonempty",
 		"-f", // Run in foreground (for container)
 	)
-	
+
 	// Build the command - use s3fs binary
 	// Note: In the Dockerfile, s3fs is installed from debian package
 	return exec.Command("s3fs", args...)
@@ -155,7 +155,7 @@ func (m *MountManager) writeActiveMount(path string) error {
 		return err
 	}
 	defer f.Close()
-	
+
 	if _, err := f.WriteString(path + "\n"); err != nil {
 		return err
 	}
@@ -165,10 +165,10 @@ func (m *MountManager) writeActiveMount(path string) error {
 // Umount unmounts all active S3FS mounts
 func (m *MountManager) Umount() error {
 	fmt.Println("Starting unmount sequence...")
-	
+
 	for _, mountPath := range m.activeMounts {
 		fmt.Printf("Unmounting: %s\n", mountPath)
-		
+
 		// Use fusermount3 to unmount (available in the Docker image)
 		cmd := exec.Command("fusermount3", "-u", mountPath)
 		if err := cmd.Run(); err != nil {
@@ -178,12 +178,12 @@ func (m *MountManager) Umount() error {
 		}
 		fmt.Printf("Successfully unmounted %s\n", mountPath)
 	}
-	
+
 	// Also try reading from active mounts file for any mounts we might have missed
 	if err := m.umountFromFile(); err != nil {
 		fmt.Printf("Warning: Failed to unmount from file: %v\n", err)
 	}
-	
+
 	return nil
 }
 
@@ -197,14 +197,14 @@ func (m *MountManager) umountFromFile() error {
 		}
 		return err
 	}
-	
+
 	lines := strings.Split(string(content), "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
-		
+
 		// Check if we already unmounted this
 		alreadyUnmounted := false
 		for _, path := range m.activeMounts {
@@ -213,7 +213,7 @@ func (m *MountManager) umountFromFile() error {
 				break
 			}
 		}
-		
+
 		if !alreadyUnmounted {
 			fmt.Printf("Unmounting (from file): %s\n", line)
 			cmd := exec.Command("fusermount3", "-u", line)
@@ -222,7 +222,7 @@ func (m *MountManager) umountFromFile() error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -234,14 +234,14 @@ func Mount() [][]string {
 		fmt.Printf("Error loading config: %v\n", err)
 		return nil
 	}
-	
+
 	manager := NewMountManager(config)
 	_, err = manager.Mount()
 	if err != nil {
 		fmt.Printf("Error mounting: %v\n", err)
 		return nil
 	}
-	
+
 	// Convert to the format expected by Python (list of lists)
 	// Python returns: [alias, bucket, host, region, access_key, secret_key]
 	var result [][]string
@@ -255,7 +255,7 @@ func Mount() [][]string {
 			s3Config.SecretKey,
 		})
 	}
-	
+
 	return result
 }
 
@@ -263,11 +263,11 @@ func Mount() [][]string {
 // In Python: mount.umount(aliases) where aliases is list of lists
 func Umount(aliases [][]string) {
 	config := &MountConfig{
-		BaseDir:   DefaultBaseDir,
-		Mounts:    []S3Config{},
+		BaseDir:          DefaultBaseDir,
+		Mounts:           []S3Config{},
 		MountingComplete: false,
 	}
-	
+
 	// Convert Python-style aliases to S3Config
 	for _, alias := range aliases {
 		if len(alias) >= 6 {
@@ -281,12 +281,12 @@ func Umount(aliases [][]string) {
 			})
 		}
 	}
-	
+
 	manager := NewMountManager(config)
 	// Build active mounts from config
 	for _, s3Config := range config.Mounts {
 		manager.activeMounts = append(manager.activeMounts, s3Config.GetMountPath(config.BaseDir))
 	}
-	
+
 	manager.Umount()
 }
