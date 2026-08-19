@@ -1,6 +1,6 @@
 # REANA-Datastore-S3FS
 
-[![image](https://github.com/reanahub/reana-datastore-s3fs/workflows/CI/badge.svg)](https://github.com/reanahub/reana-datastore-s3fs/actions)
+[![image](https://github.com/reanahub/reana-datastore-s3fs/actions/workflows/ci.yml/badge.svg)](https://github.com/reanahub/reana-datastore-s3fs/actions)
 [![image](https://codecov.io/gh/reanahub/reana-datastore-s3fs/branch/master/graph/badge.svg)](https://codecov.io/gh/reanahub/reana-datastore-s3fs)
 [![image](https://img.shields.io/badge/discourse-forum-blue.svg)](https://forum.reana.io)
 [![image](https://img.shields.io/github/license/reanahub/reana-datastore-s3fs.svg)](https://github.com/reanahub/reana-datastore-s3fs/blob/master/LICENSE)
@@ -57,32 +57,6 @@ The sidecar will mount the bucket at `/s3-data/{alias}/{bucket}`.
 
 For detailed information on how to install and use REANA, see
 [docs.reana.io](https://docs.reana.io).
-
-## Development
-
-This repository contains the complete Go implementation of the REANA datastore
-sidecar for mounting S3-compatible object storage into REANA workloads using S3FS.
-
-You can build the image locally:
-
-```console
-$ docker build \
-    -t docker.io/reanahub/reana-datastore-s3fs:0.0.0 \
-    .
-```
-
-You can run the repository checks via:
-
-```console
-$ ./run-tests.sh
-```
-
-For local Go development, build the sidecar and run the test suite:
-
-```console
-$ ./run-tests.sh --go-build
-$ ./run-tests.sh --go-tests
-```
 
 ## Useful links
 
