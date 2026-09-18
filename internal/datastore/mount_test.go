@@ -16,6 +16,7 @@ import (
 	"testing"
 )
 
+// Tests basic functionalities of mount object
 func TestNewMountManager(t *testing.T) {
 	config := &MountConfig{
 		BaseDir:          "/test",
@@ -50,6 +51,7 @@ func TestNewMountManager(t *testing.T) {
 	}
 }
 
+// Checks the correct composition of mount commands
 func TestBuildS3FSCmd(t *testing.T) {
 	manager := &MountManager{}
 
@@ -114,6 +116,7 @@ func TestBuildS3FSCmd(t *testing.T) {
 	}
 }
 
+// Checks mount command with minimal parameters
 func TestBuildS3FSCmdMinimal(t *testing.T) {
 	manager := &MountManager{}
 
@@ -165,6 +168,7 @@ func TestBuildS3FSCmdMinimal(t *testing.T) {
 	}
 }
 
+// Checks correct allocation of configurations in mount manager
 func TestBuildS3FSCmdAllOptions(t *testing.T) {
 	manager := &MountManager{}
 
@@ -206,6 +210,7 @@ func TestBuildS3FSCmdAllOptions(t *testing.T) {
 	}
 }
 
+// Check mount command with missing options
 func TestBuildS3FSCmdNoOptions(t *testing.T) {
 	manager := &MountManager{}
 
@@ -258,6 +263,7 @@ func TestBuildS3FSCmdNoOptions(t *testing.T) {
 	}
 }
 
+// Check if special characters
 func TestBuildS3FSCmdSpecialChars(t *testing.T) {
 	manager := &MountManager{}
 
@@ -290,6 +296,7 @@ func TestBuildS3FSCmdSpecialChars(t *testing.T) {
 	}
 }
 
+// Test direct s3 configuration
 func TestBuildS3FSCmdOnlyBucketAndPath(t *testing.T) {
 	manager := &MountManager{}
 
@@ -317,12 +324,14 @@ func TestBuildS3FSCmdOnlyBucketAndPath(t *testing.T) {
 	}
 }
 
+// Dummy for coverage / "testing" umount operation
 func TestUmountFunction(t *testing.T) {
 	// Call the package-level Umount function with empty aliases
 	// This should not panic and should handle empty input gracefully
 	Umount([][]string{}, true)
 }
 
+// "Test" umount with multiple aliases
 func TestUmountFunctionWithAliases(t *testing.T) {
 	// Call with a valid alias structure
 	// This tests the data transformation from [][]string to S3Config
@@ -336,6 +345,7 @@ func TestUmountFunctionWithAliases(t *testing.T) {
 	Umount(aliases, true)
 }
 
+// Umount with missing aliases
 func TestUmountFunctionWithIncompleteAliases(t *testing.T) {
 	// Call with incomplete alias structure (less than 6 elements)
 	// This tests that incomplete entries are skipped
@@ -350,11 +360,13 @@ func TestUmountFunctionWithIncompleteAliases(t *testing.T) {
 	Umount(aliases, true)
 }
 
+// Check for nil
 func TestUmountFunctionWithNil(t *testing.T) {
 	// Call with nil - should handle gracefully
 	Umount(nil, true)
 }
 
+// Check Nil configuration
 func TestNewMountManagerWithNilConfig(t *testing.T) {
 	// Test that NewMountManager handles nil config
 	// This will panic if not handled, but looking at the code it doesn't check for nil
@@ -374,6 +386,7 @@ func TestNewMountManagerWithNilConfig(t *testing.T) {
 	}
 }
 
+// Check for missing umount file
 func TestUmountFromFileNotExists(t *testing.T) {
 	// Test umountFromFile when the file doesn't exist
 	// This tests the error handling path
@@ -395,6 +408,7 @@ func TestUmountFromFileNotExists(t *testing.T) {
 	}
 }
 
+// Check tracking of active mounts
 func TestMountManagerActiveMountsTracking(t *testing.T) {
 	config := &MountConfig{
 		BaseDir:          "/data",
@@ -428,6 +442,7 @@ func TestMountManagerActiveMountsTracking(t *testing.T) {
 	}
 }
 
+// Check "real" transformation of env vars to aliases
 func TestUmountFunctionDataTransformation(t *testing.T) {
 	// Set up environment to test the transformation logic
 	os.Setenv("S3_TO_LOCAL_test1_ALIAS", "test1")
@@ -454,6 +469,7 @@ func TestUmountFunctionDataTransformation(t *testing.T) {
 	}, true)
 }
 
+// Check errors of mounting
 func TestMountFunctionError(t *testing.T) {
 	// Set up environment variables
 	os.Setenv("S3_TO_LOCAL_test_pkg_ALIAS", "test_pkg")
@@ -488,6 +504,7 @@ func TestMountFunctionError(t *testing.T) {
 	}
 }
 
+// Check umount of empty mounts
 func TestUmountWithEmptyMounts(t *testing.T) {
 	// Test Umount with aliases that result in empty mounts after filtering
 	// (all aliases have less than 6 elements)
@@ -499,6 +516,7 @@ func TestUmountWithEmptyMounts(t *testing.T) {
 	// Should not panic
 }
 
+// Mixing aliases
 func TestUmountWithMixedAliases(t *testing.T) {
 	// Test with mix of complete and incomplete aliases
 	Umount([][]string{
@@ -509,6 +527,7 @@ func TestUmountWithMixedAliases(t *testing.T) {
 	// Should not panic, should process complete ones
 }
 
+// Mount manager with empty mounts
 func TestMountManagerWithEmptyMounts(t *testing.T) {
 	// Test Mount with no mounts in config
 	// This should handle empty mounts gracefully
@@ -530,6 +549,7 @@ func TestMountManagerWithEmptyMounts(t *testing.T) {
 	_ = err
 }
 
+// Test umount from tracking file
 func TestUmountFromFileWithParsing(t *testing.T) {
 	// Test the parsing logic in umountFromFile
 	// Even though we can't write to /etc, we can test with the default path
@@ -553,6 +573,7 @@ func TestUmountFromFileWithParsing(t *testing.T) {
 	}
 }
 
+// Test access to configurations
 func TestMountManagerConfigAccess(t *testing.T) {
 	config := &MountConfig{
 		BaseDir:          "/test",
@@ -576,6 +597,7 @@ func TestMountManagerConfigAccess(t *testing.T) {
 	}
 }
 
+// Test active mounts
 func TestMountManagerActiveMountsEmpty(t *testing.T) {
 	config := &MountConfig{
 		BaseDir:          "/test",
@@ -595,6 +617,7 @@ func TestMountManagerActiveMountsEmpty(t *testing.T) {
 	}
 }
 
+// Test mount command build with host
 func TestBuildS3FSCmdWithOnlyHost(t *testing.T) {
 	manager := &MountManager{}
 
@@ -618,6 +641,7 @@ func TestBuildS3FSCmdWithOnlyHost(t *testing.T) {
 	}
 }
 
+// Only region
 func TestBuildS3FSCmdWithOnlyRegion(t *testing.T) {
 	manager := &MountManager{}
 
@@ -641,6 +665,7 @@ func TestBuildS3FSCmdWithOnlyRegion(t *testing.T) {
 	}
 }
 
+// Mountmanger with full configuration
 func TestMountManagerMountWithConfig(t *testing.T) {
 	// Test Mount with a realistic config
 	// Use a temp directory to avoid permission issues
@@ -675,6 +700,7 @@ func TestMountManagerMountWithConfig(t *testing.T) {
 	_ = err
 }
 
+// Test with realistic configurations
 func TestUmountWithRealisticConfig(t *testing.T) {
 	// Test Umount with a realistic config
 	// Use a temp directory for consistency
@@ -706,6 +732,7 @@ func TestUmountWithRealisticConfig(t *testing.T) {
 	_ = err
 }
 
+// Multi mount test
 func TestMountManagerMultipleMounts(t *testing.T) {
 	config := &MountConfig{
 		BaseDir: "/data",

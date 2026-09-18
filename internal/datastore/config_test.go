@@ -6,6 +6,7 @@ REANA is free software; you can redistribute it and/or modify it
 under the terms of the MIT License; see LICENSE file for more details.
 */
 
+// Package datastore contains main functionality of mounting and configuration for s3 sidecars
 package datastore
 
 import (
@@ -14,6 +15,7 @@ import (
 	"testing"
 )
 
+// Tests to get mount paths in local fs
 func TestS3ConfigGetMountPath(t *testing.T) {
 	config := S3Config{
 		Alias:  "myalias",
@@ -35,6 +37,7 @@ func TestS3ConfigGetMountPath(t *testing.T) {
 	}
 }
 
+// Test to get the environmental variables
 func TestGetEnvVar(t *testing.T) {
 	os.Setenv("S3_TO_LOCAL_test1_BUCKET", "test-bucket-value")
 	defer os.Unsetenv("S3_TO_LOCAL_test1_BUCKET")
@@ -47,6 +50,7 @@ func TestGetEnvVar(t *testing.T) {
 	}
 }
 
+// Check handling of not set environmental variables
 func TestGetEnvVarNonExistent(t *testing.T) {
 	os.Unsetenv("S3_TO_LOCAL_nonexistent_FIELD")
 
@@ -57,6 +61,7 @@ func TestGetEnvVarNonExistent(t *testing.T) {
 	}
 }
 
+// Check of storing multiple sets of credentials
 func TestGetEnvVarMultiple(t *testing.T) {
 	os.Setenv("S3_TO_LOCAL_myalias_ACCESS_KEY", "my-access-key")
 	os.Setenv("S3_TO_LOCAL_myalias_SECRET_KEY", "my-secret-key")
@@ -76,6 +81,7 @@ func TestGetEnvVarMultiple(t *testing.T) {
 	}
 }
 
+// Test basic functionalities of mounting function
 func TestMountConfigDefaults(t *testing.T) {
 	config := &MountConfig{
 		BaseDir:          DefaultBaseDir,
@@ -117,6 +123,7 @@ func TestMountConfigDefaults(t *testing.T) {
 	}
 }
 
+// Test of edge cases
 func TestS3ConfigGetMountPathEdgeCases(t *testing.T) {
 	testCases := []struct {
 		name     string
@@ -166,6 +173,7 @@ func TestS3ConfigGetMountPathEdgeCases(t *testing.T) {
 	}
 }
 
+// Checks basic configuration structure
 func TestS3ConfigStruct(t *testing.T) {
 	config := S3Config{
 		Alias:     "test-alias",
@@ -196,6 +204,7 @@ func TestS3ConfigStruct(t *testing.T) {
 	}
 }
 
+// Checks handling of multiple mounts
 func TestMountConfigWithMultipleMounts(t *testing.T) {
 	config := &MountConfig{
 		BaseDir: "/data",
@@ -224,6 +233,7 @@ func TestMountConfigWithMultipleMounts(t *testing.T) {
 	}
 }
 
+// Check errors in configuration loading
 func TestLoadConfigFromEnvError(t *testing.T) {
 	// LoadConfigFromEnv will try to create /s3-data which we can't do
 	// Test that it returns an error appropriately

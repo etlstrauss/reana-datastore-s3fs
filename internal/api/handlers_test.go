@@ -6,6 +6,8 @@ REANA is free software; you can redistribute it and/or modify it
 under the terms of the MIT License; see LICENSE file for more details.
 */
 
+
+// Package api provides endpoints for simple  functionalities like health check or others
 package api
 
 import (
@@ -18,6 +20,7 @@ import (
 	"github.com/reanahub/reana-datastore-s3fs/internal/datastore"
 )
 
+// Test the health endpoint of the handler when mounting is done
 func TestHealthHandlerReady(t *testing.T) {
 	config := &datastore.MountConfig{
 		BaseDir:          "/test",
@@ -48,6 +51,7 @@ func TestHealthHandlerReady(t *testing.T) {
 	}
 }
 
+// REst the health endpoint of the handler when mounting is false
 func TestHealthHandlerMounting(t *testing.T) {
 	config := &datastore.MountConfig{
 		BaseDir:          "/test",
@@ -78,6 +82,7 @@ func TestHealthHandlerMounting(t *testing.T) {
 	}
 }
 
+// Test shutdown method of api (Post)
 func TestShutdownHandlerPost(t *testing.T) {
 	server := &Server{}
 
@@ -96,6 +101,7 @@ func TestShutdownHandlerPost(t *testing.T) {
 	}
 }
 
+// Test shutdown method of api (Get)
 func TestShutdownHandlerGet(t *testing.T) {
 	server := &Server{}
 
@@ -109,6 +115,7 @@ func TestShutdownHandlerGet(t *testing.T) {
 	}
 }
 
+// Test the NewServer object on functionality
 func TestNewServer(t *testing.T) {
 	// Clear environment
 	os.Setenv("S3_TO_LOCAL_", "")
