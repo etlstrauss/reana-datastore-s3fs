@@ -14,4 +14,8 @@ func TestVersion(t *testing.T) {
 	if Version == "" {
 		t.Fatal("version must not be empty")
 	}
+	// Test GetVersion function for coverage
+	if GetVersion() != Version {
+		t.Errorf("GetVersion() should return Version, got %s", GetVersion())
+	}
 }

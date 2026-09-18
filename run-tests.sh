@@ -68,7 +68,7 @@ go_build_all() {
 }
 
 go_tests() {
-    go test -coverprofile coverage.txt "${GO_PACKAGES[@]}"
+    go test -cover -coverprofile coverage.txt "${GO_PACKAGES[@]}"
 }
 
 lint_commitlint() {

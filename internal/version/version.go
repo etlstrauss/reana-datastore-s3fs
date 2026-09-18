@@ -12,3 +12,8 @@ package version
 var Version = "0.0.0"
 
 // x-release-please-end
+
+// GetVersion returns the version string
+func GetVersion() string {
+	return Version
+}

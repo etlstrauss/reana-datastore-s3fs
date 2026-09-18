@@ -27,6 +27,8 @@ var (
 	mountManager *datastore.MountManager
 	// config is the loaded configuration
 	config *datastore.MountConfig
+	// exitFunc is used to override os.Exit for testing
+	exitFunc = os.Exit
 )
 
 func main() {
@@ -43,7 +45,7 @@ func main() {
 	config, err = datastore.LoadConfigFromEnv()
 	if err != nil {
 		fmt.Printf("Error loading configuration: %v\n", err)
-		os.Exit(1)
+		exitFunc(1)
 	}
 
 	// Create mount manager
@@ -86,7 +88,7 @@ func main() {
 	server := api.NewServer()
 	if err := server.Run(); err != nil {
 		fmt.Printf("Error running server: %v\n", err)
-		os.Exit(1)
+		exitFunc(1)
 	}
 }
 
@@ -101,5 +103,5 @@ func cleanupAndExit() {
 	}
 
 	fmt.Println("Exiting.")
-	os.Exit(0)
+	exitFunc(0)
 }
