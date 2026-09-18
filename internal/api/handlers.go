@@ -68,8 +68,8 @@ func (s *Server) ShutdownHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // NewServer creates a new Server instance
-func NewServer() *Server {
-	config, err := datastore.LoadConfigFromEnv()
+func NewServer(test ...bool) *Server {
+	config, err := datastore.LoadConfigFromEnv(test...)
 	if err != nil {
 		fmt.Printf("Warning: failed to load config: %v\n", err)
 		config = &datastore.MountConfig{

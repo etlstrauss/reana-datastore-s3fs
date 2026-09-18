@@ -198,7 +198,7 @@ func TestS3ConfigStruct(t *testing.T) {
 
 func TestMountConfigWithMultipleMounts(t *testing.T) {
 	config := &MountConfig{
-		BaseDir:  "/data",
+		BaseDir: "/data",
 		Mounts: []S3Config{
 			{Alias: "alias1", Bucket: "bucket1", Host: "host1", Region: "region1"},
 			{Alias: "alias2", Bucket: "bucket2", Host: "host2", Region: "region2"},
@@ -228,7 +228,7 @@ func TestLoadConfigFromEnvError(t *testing.T) {
 	// LoadConfigFromEnv will try to create /s3-data which we can't do
 	// Test that it returns an error appropriately
 	config, err := LoadConfigFromEnv()
-	
+
 	// We expect an error because we can't create /s3-data
 	if err == nil {
 		// If no error, config should still be valid (but mounts might be empty)

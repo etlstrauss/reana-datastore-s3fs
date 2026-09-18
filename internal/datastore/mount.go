@@ -31,17 +31,18 @@ func NewMountManager(config *MountConfig) *MountManager {
 }
 
 // Mount performs the S3FS mounting for all configured S3 buckets
-// Returns the list of mounted paths or an error
-func (m *MountManager) Mount() ([]string, error) {
+// Returns the list of mounted paths or an error.
+// In test mode (test[0] == true) the s3fs command is not actually executed.
+func (m *MountManager) Mount(test ...bool) ([]string, error) {
 	fmt.Println("Initializing S3 mounts...")
 
 	// Create folders for each mount
-	if err := m.createFolders(); err != nil {
+	if err := m.createFolders(test...); err != nil {
 		return nil, fmt.Errorf("failed to create folders: %w", err)
 	}
 
 	// Perform S3FS mounts
-	if err := m.createS3Mounts(); err != nil {
+	if err := m.createS3Mounts(test...); err != nil {
 		return nil, fmt.Errorf("failed to create S3 mounts: %w", err)
 	}
 
@@ -57,10 +58,16 @@ func (m *MountManager) Mount() ([]string, error) {
 	return m.activeMounts, nil
 }
 
-// createFolders creates the target directories for all mounts
-func (m *MountManager) createFolders() error {
+// createFolders creates the target directories for all mounts.
+// In test mode (test[0] == true) directory creation is skipped.
+func (m *MountManager) createFolders(test ...bool) error {
+	isTest := len(test) > 0 && test[0]
 	for _, s3Config := range m.config.Mounts {
 		targetPath := s3Config.GetMountPath(m.config.BaseDir)
+		if isTest {
+			fmt.Printf("(test mode) Skipping folder creation: %s\n", targetPath)
+			continue
+		}
 		if err := os.MkdirAll(targetPath, 0755); err != nil {
 			return fmt.Errorf("failed to create folder %s: %w", targetPath, err)
 		}
@@ -70,7 +77,9 @@ func (m *MountManager) createFolders() error {
 }
 
 // createS3Mounts performs the actual S3FS mount for each configuration
-func (m *MountManager) createS3Mounts() error {
+// In test mode (test[0] == true) the s3fs command is not actually executed.
+func (m *MountManager) createS3Mounts(test ...bool) error {
+	isTest := len(test) > 0 && test[0]
 	for _, s3Config := range m.config.Mounts {
 		targetPath := s3Config.GetMountPath(m.config.BaseDir)
 
@@ -86,6 +95,11 @@ func (m *MountManager) createS3Mounts() error {
 
 		// Execute S3FS mount
 		fmt.Printf("Mounting S3 bucket %s to %s\n", s3Config.Bucket, targetPath)
+		if isTest {
+			fmt.Printf("(test mode) Skipping s3fs execution for alias '%s'\n", s3Config.Alias)
+			m.activeMounts = append(m.activeMounts, targetPath)
+			continue
+		}
 		if err := cmd.Run(); err != nil {
 			if exitErr, ok := err.(*exec.ExitError); ok {
 				fmt.Printf("s3fs returned a non-zero status (%d) for alias '%s'\n",
@@ -99,9 +113,11 @@ func (m *MountManager) createS3Mounts() error {
 		fmt.Printf("Successfully mounted '%s'\n", s3Config.Alias)
 		m.activeMounts = append(m.activeMounts, targetPath)
 
-		// Write to active mounts file for tracking
-		if err := m.writeActiveMount(targetPath); err != nil {
-			fmt.Printf("Warning: failed to write active mount: %v\n", err)
+		// Write to active mounts file for tracking (skip in test mode)
+		if !isTest {
+			if err := m.writeActiveMount(targetPath); err != nil {
+				fmt.Printf("Warning: failed to write active mount: %v\n", err)
+			}
 		}
 	}
 
@@ -162,12 +178,19 @@ func (m *MountManager) writeActiveMount(path string) error {
 	return nil
 }
 
-// Umount unmounts all active S3FS mounts
-func (m *MountManager) Umount() error {
+// Umount unmounts all active S3FS mounts.
+// In test mode (test[0] == true) the fusermount3 command is not actually executed.
+func (m *MountManager) Umount(test ...bool) error {
+	isTest := len(test) > 0 && test[0]
 	fmt.Println("Starting unmount sequence...")
 
 	for _, mountPath := range m.activeMounts {
 		fmt.Printf("Unmounting: %s\n", mountPath)
+
+		if isTest {
+			fmt.Printf("(test mode) Skipping fusermount3 execution for %s\n", mountPath)
+			continue
+		}
 
 		// Use fusermount3 to unmount (available in the Docker image)
 		cmd := exec.Command("fusermount3", "-u", mountPath)
@@ -180,15 +203,17 @@ func (m *MountManager) Umount() error {
 	}
 
 	// Also try reading from active mounts file for any mounts we might have missed
-	if err := m.umountFromFile(); err != nil {
+	if err := m.umountFromFile(test...); err != nil {
 		fmt.Printf("Warning: Failed to unmount from file: %v\n", err)
 	}
 
 	return nil
 }
 
-// umountFromFile reads the active mounts file and unmounts each path
-func (m *MountManager) umountFromFile() error {
+// umountFromFile reads the active mounts file and unmounts each path.
+// In test mode (test[0] == true) the fusermount3 command is not actually executed.
+func (m *MountManager) umountFromFile(test ...bool) error {
+	isTest := len(test) > 0 && test[0]
 	content, err := os.ReadFile(ActiveMountsFile)
 	if err != nil {
 		// File might not exist, which is fine
@@ -216,6 +241,10 @@ func (m *MountManager) umountFromFile() error {
 
 		if !alreadyUnmounted {
 			fmt.Printf("Unmounting (from file): %s\n", line)
+			if isTest {
+				fmt.Printf("(test mode) Skipping fusermount3 execution for %s\n", line)
+				continue
+			}
 			cmd := exec.Command("fusermount3", "-u", line)
 			if err := cmd.Run(); err != nil {
 				fmt.Printf("Warning: Failed to unmount %s. It might be busy.\n", line)
@@ -227,16 +256,17 @@ func (m *MountManager) umountFromFile() error {
 }
 
 // Mount performs the mounting and returns the configuration with aliases
-// This function matches the Python mount.mount() signature
-func Mount() [][]string {
-	config, err := LoadConfigFromEnv()
+// This function matches the Python mount.mount() signature.
+// In test mode (test[0] == true) no external commands are executed.
+func Mount(test ...bool) [][]string {
+	config, err := LoadConfigFromEnv(test...)
 	if err != nil {
 		fmt.Printf("Error loading config: %v\n", err)
 		return nil
 	}
 
 	manager := NewMountManager(config)
-	_, err = manager.Mount()
+	_, err = manager.Mount(test...)
 	if err != nil {
 		fmt.Printf("Error mounting: %v\n", err)
 		return nil
@@ -260,8 +290,9 @@ func Mount() [][]string {
 }
 
 // Umount unmounts all mounts (matches Python mount.umount() signature)
-// In Python: mount.umount(aliases) where aliases is list of lists
-func Umount(aliases [][]string) {
+// In Python: mount.umount(aliases) where aliases is list of lists.
+// In test mode (test[0] == true) no external commands are executed.
+func Umount(aliases [][]string, test ...bool) {
 	config := &MountConfig{
 		BaseDir:          DefaultBaseDir,
 		Mounts:           []S3Config{},
@@ -288,5 +319,5 @@ func Umount(aliases [][]string) {
 		manager.activeMounts = append(manager.activeMounts, s3Config.GetMountPath(config.BaseDir))
 	}
 
-	manager.Umount()
+	manager.Umount(test...)
 }

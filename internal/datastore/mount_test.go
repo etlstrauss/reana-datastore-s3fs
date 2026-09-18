@@ -320,7 +320,7 @@ func TestBuildS3FSCmdOnlyBucketAndPath(t *testing.T) {
 func TestUmountFunction(t *testing.T) {
 	// Call the package-level Umount function with empty aliases
 	// This should not panic and should handle empty input gracefully
-	Umount([][]string{})
+	Umount([][]string{}, true)
 }
 
 func TestUmountFunctionWithAliases(t *testing.T) {
@@ -330,29 +330,29 @@ func TestUmountFunctionWithAliases(t *testing.T) {
 		{"alias1", "bucket1", "host1", "region1", "key1", "secret1"},
 		{"alias2", "bucket2", "host2", "region2", "key2", "secret2"},
 	}
-	
+
 	// This should not panic even without fusermount3
 	// It tests the alias-to-config transformation logic
-	Umount(aliases)
+	Umount(aliases, true)
 }
 
 func TestUmountFunctionWithIncompleteAliases(t *testing.T) {
 	// Call with incomplete alias structure (less than 6 elements)
 	// This tests that incomplete entries are skipped
 	aliases := [][]string{
-		{"alias1", "bucket1"},           // Only 2 elements - should be skipped
-		{"alias2"},                      // Only 1 element - should be skipped
-		{},                              // Empty - should be skipped
+		{"alias1", "bucket1"},                    // Only 2 elements - should be skipped
+		{"alias2"},                               // Only 1 element - should be skipped
+		{},                                       // Empty - should be skipped
 		{"alias3", "b3", "h3", "r3", "k3", "s3"}, // Complete - should be processed
 	}
-	
+
 	// This should not panic - it should skip incomplete entries
-	Umount(aliases)
+	Umount(aliases, true)
 }
 
 func TestUmountFunctionWithNil(t *testing.T) {
 	// Call with nil - should handle gracefully
-	Umount(nil)
+	Umount(nil, true)
 }
 
 func TestNewMountManagerWithNilConfig(t *testing.T) {
@@ -360,15 +360,15 @@ func TestNewMountManagerWithNilConfig(t *testing.T) {
 	// This will panic if not handled, but looking at the code it doesn't check for nil
 	// So we expect this to create a manager with nil config
 	manager := NewMountManager(nil)
-	
+
 	if manager == nil {
 		t.Error("Expected non-nil manager")
 	}
-	
+
 	if manager.config != nil {
 		t.Errorf("Expected nil config, got %v", manager.config)
 	}
-	
+
 	if len(manager.activeMounts) != 0 {
 		t.Errorf("Expected empty activeMounts, got %d", len(manager.activeMounts))
 	}
@@ -387,8 +387,8 @@ func TestUmountFromFileNotExists(t *testing.T) {
 	// Ensure the file doesn't exist by setting to a non-existent path
 	// We can't change ActiveMountsFile as it's a const, so we test with the default
 	// which likely doesn't exist in test environment
-	err := manager.umountFromFile()
-	
+	err := manager.umountFromFile(true)
+
 	// Should return nil when file doesn't exist (os.IsNotExist is handled)
 	if err != nil {
 		t.Errorf("Expected umountFromFile() to return nil when file doesn't exist, got error: %v", err)
@@ -403,26 +403,26 @@ func TestMountManagerActiveMountsTracking(t *testing.T) {
 			{Alias: "alias1", Bucket: "bucket1"},
 		},
 	}
-	
+
 	manager := NewMountManager(config)
-	
+
 	// Initially should have empty activeMounts
 	if len(manager.activeMounts) != 0 {
 		t.Errorf("Expected empty activeMounts initially, got %d", len(manager.activeMounts))
 	}
-	
+
 	// Manually add a mount (simulating successful mount)
 	manager.activeMounts = append(manager.activeMounts, "/mnt/test1")
 	manager.activeMounts = append(manager.activeMounts, "/mnt/test2")
-	
+
 	if len(manager.activeMounts) != 2 {
 		t.Errorf("Expected 2 active mounts, got %d", len(manager.activeMounts))
 	}
-	
+
 	if manager.activeMounts[0] != "/mnt/test1" {
 		t.Errorf("Expected first mount '/mnt/test1', got '%s'", manager.activeMounts[0])
 	}
-	
+
 	if manager.activeMounts[1] != "/mnt/test2" {
 		t.Errorf("Expected second mount '/mnt/test2', got '%s'", manager.activeMounts[1])
 	}
@@ -436,7 +436,7 @@ func TestUmountFunctionDataTransformation(t *testing.T) {
 	os.Setenv("S3_TO_LOCAL_test1_REGION", "region1")
 	os.Setenv("S3_TO_LOCAL_test1_ACCESS_KEY", "key1")
 	os.Setenv("S3_TO_LOCAL_test1_SECRET_KEY", "secret1")
-	
+
 	defer func() {
 		os.Unsetenv("S3_TO_LOCAL_test1_ALIAS")
 		os.Unsetenv("S3_TO_LOCAL_test1_BUCKET")
@@ -445,13 +445,13 @@ func TestUmountFunctionDataTransformation(t *testing.T) {
 		os.Unsetenv("S3_TO_LOCAL_test1_ACCESS_KEY")
 		os.Unsetenv("S3_TO_LOCAL_test1_SECRET_KEY")
 	}()
-	
+
 	// Test with aliases that should be converted to S3Config
 	// The Umount function will try to load config from env and unmount
 	// We just verify it doesn't panic
 	Umount([][]string{
 		{"test1", "bucket1", "host1", "region1", "key1", "secret1"},
-	})
+	}, true)
 }
 
 func TestMountFunctionError(t *testing.T) {
@@ -462,7 +462,7 @@ func TestMountFunctionError(t *testing.T) {
 	os.Setenv("S3_TO_LOCAL_test_pkg_REGION", "us-west-1")
 	os.Setenv("S3_TO_LOCAL_test_pkg_ACCESS_KEY", "pkg-key")
 	os.Setenv("S3_TO_LOCAL_test_pkg_SECRET_KEY", "pkg-secret")
-	
+
 	defer func() {
 		os.Unsetenv("S3_TO_LOCAL_test_pkg_ALIAS")
 		os.Unsetenv("S3_TO_LOCAL_test_pkg_BUCKET")
@@ -472,13 +472,19 @@ func TestMountFunctionError(t *testing.T) {
 		os.Unsetenv("S3_TO_LOCAL_test_pkg_SECRET_KEY")
 	}()
 
-	// Mount will fail because it can't create /s3-data
-	// But we can test the error handling
-	result := Mount()
-	
-	// Result should be nil because LoadConfigFromEnv will fail
-	if result != nil {
-		t.Errorf("Expected nil result when mounting fails, got %v", result)
+	// In test mode LoadConfigFromEnv skips creating /s3-data, so Mount succeeds
+	// and returns the configured aliases without executing s3fs.
+	result := Mount(true)
+
+	// Result should contain the single alias configured above
+	if result == nil {
+		t.Fatal("Expected non-nil result in test mode, got nil")
+	}
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 alias, got %d", len(result))
+	}
+	if result[0][0] != "test_pkg" {
+		t.Errorf("Expected alias 'test_pkg', got '%s'", result[0][0])
 	}
 }
 
@@ -489,7 +495,7 @@ func TestUmountWithEmptyMounts(t *testing.T) {
 		{"short"},
 		{"also", "short"},
 		{"still", "too", "short"},
-	})
+	}, true)
 	// Should not panic
 }
 
@@ -497,9 +503,9 @@ func TestUmountWithMixedAliases(t *testing.T) {
 	// Test with mix of complete and incomplete aliases
 	Umount([][]string{
 		{"c1", "b1", "h1", "r1", "k1", "s1"}, // Complete
-		{"short"},                                   // Incomplete
+		{"short"},                            // Incomplete
 		{"c2", "b2", "h2", "r2", "k2", "s2"}, // Complete
-	})
+	}, true)
 	// Should not panic, should process complete ones
 }
 
@@ -511,13 +517,13 @@ func TestMountManagerWithEmptyMounts(t *testing.T) {
 		Mounts:           []S3Config{},
 		MountingComplete: false,
 	}
-	
+
 	manager := NewMountManager(config)
-	
+
 	// This will try to create /s3-data which we can't do
 	// But we test that it handles the error gracefully
-	mountedPaths, err := manager.Mount()
-	
+	mountedPaths, err := manager.Mount(true)
+
 	// Should return an error or succeed
 	// We just want to verify it doesn't panic
 	_ = mountedPaths
@@ -532,16 +538,16 @@ func TestUmountFromFileWithParsing(t *testing.T) {
 		Mounts:           []S3Config{},
 		MountingComplete: false,
 	}
-	
+
 	manager := NewMountManager(config)
-	
+
 	// Add a mount to activeMounts
 	manager.activeMounts = []string{"/mnt/existing"}
-	
+
 	// Call umountFromFile - it will try to read from /etc/active_mounts.txt
 	// which doesn't exist, so it should return nil
-	err := manager.umountFromFile()
-	
+	err := manager.umountFromFile(true)
+
 	if err != nil {
 		t.Errorf("Expected umountFromFile() to return nil when file doesn't exist, got: %v", err)
 	}
@@ -555,14 +561,14 @@ func TestMountManagerConfigAccess(t *testing.T) {
 			{Alias: "test", Bucket: "bucket"},
 		},
 	}
-	
+
 	manager := NewMountManager(config)
-	
+
 	// Test that we can access the config through the manager
 	if manager.config != config {
 		t.Error("Expected manager.config to equal the provided config")
 	}
-	
+
 	// Test that we can modify config through manager
 	manager.config.MountingComplete = true
 	if !config.MountingComplete {
@@ -576,14 +582,14 @@ func TestMountManagerActiveMountsEmpty(t *testing.T) {
 		MountingComplete: false,
 		Mounts:           []S3Config{},
 	}
-	
+
 	manager := NewMountManager(config)
-	
+
 	// activeMounts should be initialized as empty slice
 	if manager.activeMounts == nil {
 		t.Error("Expected activeMounts to be initialized (not nil)")
 	}
-	
+
 	if len(manager.activeMounts) != 0 {
 		t.Errorf("Expected empty activeMounts, got %d", len(manager.activeMounts))
 	}
@@ -643,7 +649,7 @@ func TestMountManagerMountWithConfig(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
-	
+
 	config := &MountConfig{
 		BaseDir:          tempDir,
 		MountingComplete: false,
@@ -658,12 +664,12 @@ func TestMountManagerMountWithConfig(t *testing.T) {
 			},
 		},
 	}
-	
+
 	manager := NewMountManager(config)
-	
+
 	// Call Mount - it will fail due to s3fs not being available but we can test the flow
-	mountedPaths, err := manager.Mount()
-	
+	mountedPaths, err := manager.Mount(true)
+
 	// We don't care about the result, just that it doesn't panic
 	_ = mountedPaths
 	_ = err
@@ -677,32 +683,32 @@ func TestUmountWithRealisticConfig(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
-	
+
 	config := &MountConfig{
-		BaseDir:   tempDir,
-		Mounts:    []S3Config{},
+		BaseDir:          tempDir,
+		Mounts:           []S3Config{},
 		MountingComplete: false,
 	}
-	
+
 	manager := NewMountManager(config)
-	
+
 	// Manually set up active mounts
 	manager.activeMounts = []string{
 		fmt.Sprintf("%s/alias1/bucket1", tempDir),
 		fmt.Sprintf("%s/alias2/bucket2", tempDir),
 	}
-	
+
 	// Call Umount - it will try to execute fusermount3 which will fail
 	// but we can test the logic
-	err = manager.Umount()
-	
+	err = manager.Umount(true)
+
 	// We don't care about the error, just that it doesn't panic
 	_ = err
 }
 
 func TestMountManagerMultipleMounts(t *testing.T) {
 	config := &MountConfig{
-		BaseDir:  "/data",
+		BaseDir: "/data",
 		Mounts: []S3Config{
 			{Alias: "alias1", Bucket: "bucket1"},
 			{Alias: "alias2", Bucket: "bucket2"},
@@ -710,14 +716,14 @@ func TestMountManagerMultipleMounts(t *testing.T) {
 		},
 		MountingComplete: false,
 	}
-	
+
 	manager := NewMountManager(config)
-	
+
 	// Verify config was set correctly
 	if len(manager.config.Mounts) != 3 {
 		t.Errorf("Expected 3 mounts in config, got %d", len(manager.config.Mounts))
 	}
-	
+
 	// Verify we can access individual mounts
 	if manager.config.Mounts[0].Alias != "alias1" {
 		t.Errorf("Expected first mount alias 'alias1', got '%s'", manager.config.Mounts[0].Alias)

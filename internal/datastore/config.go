@@ -52,16 +52,19 @@ const EnvVarPattern = `^S3_TO_LOCAL_(.*)_ALIAS$`
 
 // LoadConfigFromEnv loads S3 configurations from environment variables
 // It scans for S3_TO_LOCAL_*_ALIAS variables and loads corresponding settings
-func LoadConfigFromEnv() (*MountConfig, error) {
+func LoadConfigFromEnv(test ...bool) (*MountConfig, error) {
 	config := &MountConfig{
 		BaseDir:          DefaultBaseDir,
 		Mounts:           []S3Config{},
 		MountingComplete: false,
 	}
 
-	// Create base directory if it doesn't exist
-	if err := os.MkdirAll(config.BaseDir, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create base directory %s: %w", config.BaseDir, err)
+	// Create base directory if it doesn't exist (skip in test mode)
+	isTest := len(test) > 0 && test[0]
+	if !isTest {
+		if err := os.MkdirAll(config.BaseDir, 0755); err != nil {
+			return nil, fmt.Errorf("failed to create base directory %s: %w", config.BaseDir, err)
+		}
 	}
 
 	// Find all S3_TO_LOCAL_*_ALIAS environment variables

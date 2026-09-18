@@ -113,7 +113,7 @@ func TestNewServer(t *testing.T) {
 	// Clear environment
 	os.Setenv("S3_TO_LOCAL_", "")
 
-	server := NewServer()
+	server := NewServer(true)
 
 	if server == nil {
 		t.Fatal("NewServer() returned nil")
