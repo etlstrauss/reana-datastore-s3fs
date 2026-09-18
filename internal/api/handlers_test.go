@@ -6,7 +6,6 @@ REANA is free software; you can redistribute it and/or modify it
 under the terms of the MIT License; see LICENSE file for more details.
 */
 
-
 // Package api provides endpoints for simple  functionalities like health check or others
 package api
 
